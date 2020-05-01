@@ -26,10 +26,18 @@ Markus F.X.J. Oberhumer   Version 0.4, Feb. 18 1998
                           optimized scaling routines
                           use memcpy() instead of memmove() ;-)
                           some other minor changes/fixes
-tony mancill		2002/02/13 <tmancill@debian.org>       
+tony mancill		2002/02/13 <tmancill@debian.org>
 			hacked in support for WM_DELETE_WINDOW
-*/
 
+Carlos Pantelides       * 2020/04/01
+                          added follow mouse taken from
+                          https://github.com/mbarakatt/xzoom-follow-mouse
+
+
+
+*/
+#include <assert.h>
+#include <unistd.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -317,11 +325,49 @@ void scale32(void)
 #undef T
 }
 
+static int _XlibErrorHandler(Display *display, XErrorEvent *event) {
+	fprintf(stderr, "An error occured detecting the mouse position\n");
+	return True;
+}
 
 int
 main(int argc, char **argv) {
+	int follow_mouse = False;
+	int number_of_screens;
+	int i;
+	Bool result;
+	Window *root_windows;
+	Window window_returned;
+	int root_x, root_y;
+	int win_x, win_y;
+	unsigned int mask_return;
+
+	Display *display = XOpenDisplay(NULL);
+	assert(display);
+	XSetErrorHandler(_XlibErrorHandler);
+	number_of_screens = XScreenCount(display);
+	fprintf(stderr, "There are %d screens available in this X session\n", number_of_screens);
+	root_windows = malloc(sizeof(Window) * number_of_screens);
+	for (i = 0; i < number_of_screens; i++) {
+		root_windows[i] = XRootWindow(display, i);
+	}
+	for (i = 0; i < number_of_screens; i++) {
+		result = XQueryPointer(display, root_windows[i], &window_returned,
+				&window_returned, &root_x, &root_y, &win_x, &win_y,
+				&mask_return);
+		if (result == True) {
+			break;
+		}
+	}
+	if (result != True) {
+		fprintf(stderr, "No mouse found.\n");
+		return -1;
+	}
+	printf("Mouse is at (%d,%d)\n", root_x, root_y);
+
 	XSetWindowAttributes xswa;
 	XEvent event;
+
 	int buttonpressed = False;
 	int unmapped = True;
 	int scroll = 1;
@@ -329,8 +375,8 @@ main(int argc, char **argv) {
 	XGCValues gcv;
 	char *dpyname = NULL;
 	int source_geom_mask = NoValue,
-	    dest_geom_mask = NoValue,
-	    copy_from_src_mask;
+		dest_geom_mask = NoValue,
+		copy_from_src_mask;
 	int xpos = 0, ypos = 0;
 
 	atexit(destroy_images);
@@ -343,6 +389,12 @@ main(int argc, char **argv) {
 	/* parse command line options */
 	while(--argc > 0) {
 		++argv;
+
+		if(!strcmp(argv[0], "-follow")) {
+			follow_mouse = True;
+			printf("follow mouse ON\n");
+			continue;
+		}
 
 		if(argv[0][0] == '=') {
 			dest_geom_mask = XParseGeometry(argv[0],
@@ -525,14 +577,14 @@ main(int argc, char **argv) {
 			(unsigned char *)progname, strlen(progname));
 	*/
 
-	
+
  	/***	20020213
 		code added by <tmancill@debian.org> to handle
-		window manager "close" event 
+		window manager "close" event
 	***/
 	wm_delete_window = XInternAtom (dpy, "WM_DELETE_WINDOW", False);
-	wm_protocols = XInternAtom(dpy, "WM_PROTOCOLS", False);                  
-        status = XSetWMProtocols(dpy, win, &wm_delete_window, 1);                   
+	wm_protocols = XInternAtom(dpy, "WM_PROTOCOLS", False);
+        status = XSetWMProtocols(dpy, win, &wm_delete_window, 1);
 
 	set_title = True;
 
@@ -582,13 +634,28 @@ main(int argc, char **argv) {
 
 	for(;;) {
 
+		for (i = 0; i < number_of_screens; i++) {
+			result = XQueryPointer(display, root_windows[i], &window_returned,
+					&window_returned, &root_x, &root_y, &win_x, &win_y,
+					&mask_return);
+			if (result == True) {
+				break;
+			}
+		}
+		if (result != True) {
+			fprintf(stderr, "No mouse found.\n");
+			return -1;
+		}
+		//printf("Mouse is at (%d,%d)\n", root_x, root_y);
+		xgrab = root_x - width[SRC]/2;
+		ygrab = root_y - height[SRC]/2;
 		/*****
 		old event loop updated to support WM messages
 		while(unmapped?
 			(XWindowEvent(dpy, win, (long)-1, &event), 1):
 			XCheckWindowEvent(dpy, win, (long)-1, &event)) {
 		******/
-		
+
 		while(XPending(dpy)) {
 			XNextEvent(dpy, &event);
 			switch(event.type) {
@@ -757,6 +824,8 @@ main(int argc, char **argv) {
 					break;
 
 				case 'q':
+					free(root_windows);
+					XCloseDisplay(display);
 					exit(0);
 					break;
 				}
