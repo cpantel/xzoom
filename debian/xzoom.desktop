@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Screen Magnifier
+GenericName=Screen Magnifier
+Comment=Magnify part of display, with real-time updates.
+Keywords=screen magnifier;
+Exec=xzoom -mag 3 -geometry 320x240
+Icon=system-search
+Terminal=false
+Type=Application
+StartupNotify=true
+Categories=GTK;GNOME;Utility;Accessibility;

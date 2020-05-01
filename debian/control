@@ -1,0 +1,17 @@
+Source: xzoom
+Section: x11
+Priority: optional
+Build-Depends: debhelper (>= 5), libxext-dev, libxt-dev, xutils-dev
+Maintainer: Debian QA Group <packages@qa.debian.org>
+Homepage: ftp://sunsite.unc.edu/pub/linux/libs/X/
+Standards-Version: 3.8.0
+
+Package: xzoom
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: magnify part of X display, with real-time updates
+ Like xmag, xzoom magnifies a section of the X display. Xzoom is different
+ because it will continuously update the magnified area as the display
+ changes. It is fast enough to enlarge small animations, for example.
+ .
+ It can also mirror or rotate a part of the screen.

@@ -1,0 +1,18 @@
+Begin3
+Title:          xzoom
+Version:        0.3
+Entered-date:   May 30 1996
+Description:    xzoom can magnify (by integer value) rotate
+                (by a multiple if 90 degrees) and mirror about
+				the X or Y axes areas on X11 screen and display
+				them in it's window.
+Keywords:       X11 zoom magnify xmag
+Author:         Itai Nahshon <nahshon@best.com>
+Maintained-by:  Itai Nahshon <nahshon@best.com>
+Primary-site:   sunsite.unc.edu
+                probably in /pub/Linux/X11/xutils/xzoom-0.3.tgz
+Platforms:      Linux+11. Support only for 8-bit depth.
+                Tested only in Linux pre-2.0.* with the XSVGA 3.1.2 driver.
+				Needs the XSHM extension.
+Copying-policy: Free
+End

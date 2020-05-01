@@ -1,0 +1,169 @@
+.\" xzoom.man
+.\" Copyright Itai Nahshon
+.\"
+.TH XZOOM 1x
+.SH NAME
+xzoom \- magnify part of the screen, with fast updates
+.SH SYNOPSIS
+.B xzoom
+[ \-display \fIdisplayname\fP ] [ \-mag \fImag\fP [ \fImag\fP ] ]
+[ \-x ] [ \-y ] [ \-xy ]
+[ \-geometry \fIgeometry\fP ] [ \-source \fIgeometry\fP ]
+.SH OPTIONS
+.LP
+.TP 5
+.B \-display \fIdisplayname\fP \fR|\fP \-d \fIdisplayname\fP
+The name of the display to use
+(not very useful).
+.TP 5
+.B \-mag \fImag\fP [ \fImag\fP ]
+What magnification to use. If two number arguments are supplied the
+first is used for X magnifications and the second is used for Y magnification.
+Magnification should be greater than 0.
+.TP 5
+.B \-x
+Mirror horizontally.
+.TP 5
+.B \-y
+Mirror vertically.
+.TP 5
+.B \-xy \fR|\fP \-z
+Exchange X and Y axes before any magnification is performed.
+.TP 5
+.B \-geometry \fIgeometry\fP \fR|\fP =\fIgeometry\fP
+Size and position \fBxzoom\fR's window.
+.TP 5
+.B \-source \fIgeometry\fP
+Size and position the initial source area which is magnified.
+The dimensions of this area are multiplied by the magnification to
+get the size of \fBxzoom\fR's window. If these dimensions are given
+separately (by use of \-geometry ) then an error is reported.
+.br
+.SH DESCRIPTION
+.IR Xzoom
+displays in its window a magnified area of the X11 display.
+The user can interactively change the zoomed area, the window
+size, magnification (optionally different magnification for
+X and Y axes) or rotate or mirror the image.
+.SH COMMANDS
+.LP
+Once xzoom has started the user can enter simple commands
+using the keyboard.
+.LP
+.TP 5
+.B q
+quit.
+.TP 5
+.B \+
+increase magnification value by 1.
+.TP 5
+.B \-
+decrease magnification value by 1.
+.TP 5
+.B w
+next \+ or \- command only affect X magnification.
+.TP 5
+.B h
+next \+ or \- command only affect Y magnification.
+.TP 5
+.B x
+mirror the display image horizontally.
+.TP 5
+.B y
+mirror the display image vertically.
+.TP 5
+.B z
+rotate the displayed image 90 degrees counter-clockwise.
+.TP 5
+.B arrow keys
+scroll the zoomed area 1 pixel in the direction of the arrow.
+if the
+.B control
+key is pressed the zoomed area will scroll 10 pixels.
+.TP 5
+.B d
+sets the delay between frame updates. 
+Built-in delays are 200, 100, 50, 10 and 0 ms.
+.TP 5
+.B g
+toggle grid on and off.
+.TP 5
+.B Mouse buttons
+To set the location of the magnified are click the left mouse
+button inside xzoom's window and then move it (keep the button
+pressed) to the place which you want to see magnified.
+.sp 1
+Xzoom allow you to resize it's window at any time.
+.sp 1
+When xzoom is iconified it simply waits to get deiconified.
+.SH DISPLAYS
+Xzoom uses the window's title bar to inform the user about
+it's status. Normally the title says something like
+.B "xzoom x2"
+which means the magnification is 2 both in X and Y axes.
+If the image is stretched differently on the X and Y axes
+the title will say
+.B "xzoom X 2; Y 4."
+Negative numbers mean reflection.
+If the image is rotated by 90 or 270 degrees the title
+will show
+.B "<=>"
+between the X and Y values.
+.sp 1
+When
+.B d
+is depressed the title will display the new delay value for
+approximately 2 seconds and then revert to the default display
+of magnification values.
+.SH PERFORMANCE
+Xzoom is fast enough to display enlarged or mirrored animations
+in small windows. On my 486 DX2-66 and Cirrus Logic CL-GD5428
+display card (attached to Vesa local bus) update of a 256x256
+window magnified by 2 (ie, source rect is 128x128) takes
+approximately 30 ms. This time varies, off course when
+a different size window or different magnification is used.
+If we chose 50 ms between updates we can get about 12.5 frames per
+second and still let an animation program do it's work.
+It is possible to compile xzoom without X shared memory support.
+In that case window update may be about 3 times slower (if we
+are using a local display, using LAN is a different story).
+.SH SEE ALSO
+xmag.1x.
+.br
+I got the motivation for writing xzoom after I saw a similar
+WindowsNT program, zoomin working. It started just as a test
+for X11 performance. I don't have the fancy menus and scrollbar
+like zoomin but I do have all their features (and more) accessible
+from the keyboard.
+.SH BUGS
+.LP 5
+\(dg
+The maximum internal built in delay (see command
+.B d
+above) was set to 200 ms. Xzoom completes the delay before
+polling the X event queue for the next command. Larger
+delays would feel like poor response to user commands.
+.LP 5
+\(dg
+For best performance the shared memory extension for X11 is
+used. Xzoom will fail if it is compiled to use XSHM and its
+display is not on the local host.
+.LP 5
+\(dg
+Xzoom is given with no warranty. It was tested only under
+Linux with Xfree86 release 3.1.2 (X11R6).
+.LP 5
+\(dg
+Some strange behavior may occur if the requested magnified area
+falls beyond the borders of the screen. Example is when you have
+magnification of 1 and a window whose width is greater than the
+height of the screen and you want 90 degrees rotation. In that
+case part of the window will not get updated.
+.LP 5
+\(dg
+The frame used to mark the zoomed area may corrupt the contents
+of other windows if they are modified when the frame is visible.
+If you don't like it disable the \-DFRAME option when compiling
+xzoom.
+.SH AUTHOR
+Itai Nahshon

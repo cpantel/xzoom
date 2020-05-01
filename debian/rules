@@ -1,0 +1,39 @@
+#!/usr/bin/make -f
+
+build: build-stamp 
+build-stamp:
+	dh_testdir
+	xmkmf -a
+	$(MAKE)
+	touch build-stamp
+
+clean:
+	dh_testdir
+	dh_testroot
+	rm -f build-stamp
+	if [ -e Makefile ]; then $(MAKE) -i clean; fi
+	dh_clean Makefile
+
+binary-indep: build
+
+binary-arch: build
+	dh_testdir
+	dh_testroot
+	dh_clean -k
+	$(MAKE) DESTDIR=debian/xzoom install
+	dh_installman xzoom.man
+	dh_installdocs README
+	dh_installmenu
+	dh_installchangelogs
+	dh_install
+	dh_strip
+	dh_compress
+	dh_fixperms
+	dh_installdeb
+	dh_shlibdeps
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+binary: binary-indep binary-arch
+.PHONY: build clean binary-indep binary-arch binary

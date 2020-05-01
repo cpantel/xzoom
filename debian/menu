@@ -1,0 +1,2 @@
+?package(xzoom):needs="x11" section="Applications/Accessibility" \
+	title="Xzoom" command="xzoom"
