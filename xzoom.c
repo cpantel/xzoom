@@ -236,7 +236,10 @@ Usage(void) {
 		"-source geometry\n"
 		"-x\n"
 		"-y\n"
-		"-xy\n\n"
+		"-xy\n"
+		"-follow\n"
+		"-no-follow\n\n"
+
 		"Window commands:\n"
 		"+: Zoom in\n"
 		"-: Zoom out\n"
@@ -246,6 +249,7 @@ Usage(void) {
 		"w: Next '+' or '-' only change width scaling\n"
 		"h: Next '+' or '-' only change height scaling\n"
 		"d: Change delay between frames\n"
+		"f: Turn ON or OFF follow mouse\n"
 		"q: Quit\n"
 		"Arrow keys: Scroll in direction of arrow\n"
 		"Mouse button drag: Set top-left corner of viewed area\n",
@@ -393,7 +397,11 @@ main(int argc, char **argv) {
 
 		if(!strcmp(argv[0], "-follow")) {
 			follow_mouse = True;
-			printf("follow mouse ON\n");
+			continue;
+		}
+
+		if(!strcmp(argv[0], "-no-follow")) {
+			follow_mouse = False;
 			continue;
 		}
 
