@@ -26,16 +26,14 @@ Markus F.X.J. Oberhumer   Version 0.4, Feb. 18 1998
                           optimized scaling routines
                           use memcpy() instead of memmove() ;-)
                           some other minor changes/fixes
-tony mancill		2002/02/13 <tmancill@debian.org>
-			hacked in support for WM_DELETE_WINDOW
+tony mancill              2002/02/13 <tmancill@debian.org>
+                          hacked in support for WM_DELETE_WINDOW
 
 Carlos Pantelides       * 2020/04/01
-                          added follow mouse taken from
-                          https://github.com/mbarakatt/xzoom-follow-mouse
-                          with modifications to allow turning this feature ON and OFF
-
-
-
+                          Added follow mouse taken from
+                            https://github.com/mbarakatt/xzoom-follow-mouse
+                            with modifications to allow turning this feature ON and OFF
+                          Added show cursor in magnifier, do not works with rotations
 */
 #include <assert.h>
 #include <unistd.h>
@@ -96,6 +94,7 @@ int set_title;
 #define MAGX	MAG				/* horizontal magnification */
 #define MAGY	MAG				/* vertical magnification */
 
+#define CURSOR_RADIUS 5  /* magnifier cursor radius */
 int xgrab, ygrab;				/* where do we take the picture from */
 
 int magx = MAGX;
@@ -236,7 +235,11 @@ Usage(void) {
 		"-source geometry\n"
 		"-x\n"
 		"-y\n"
-		"-xy\n\n"
+		"-xy\n"
+		"-follow\n"
+		"-no-follow\n"
+		"-cursor\n"
+		"-no-cursor\n\n"
 		"Window commands:\n"
 		"+: Zoom in\n"
 		"-: Zoom out\n"
@@ -245,6 +248,8 @@ Usage(void) {
 		"z: Rotate 90 degrees counter-clockwize\n"
 		"w: Next '+' or '-' only change width scaling\n"
 		"h: Next '+' or '-' only change height scaling\n"
+		"f: Turn ON or OFF follow mouse\n"
+		"c: Turn ON or OFF show cursor\n"
 		"d: Change delay between frames\n"
 		"q: Quit\n"
 		"Arrow keys: Scroll in direction of arrow\n"
@@ -334,6 +339,7 @@ static int _XlibErrorHandler(Display *display, XErrorEvent *event) {
 int
 main(int argc, char **argv) {
 	int follow_mouse = False;
+	int show_cursor = True;
 	int number_of_screens;
 	int i;
 	Bool result;
@@ -393,7 +399,21 @@ main(int argc, char **argv) {
 
 		if(!strcmp(argv[0], "-follow")) {
 			follow_mouse = True;
-			printf("follow mouse ON\n");
+			continue;
+		}
+
+		if(!strcmp(argv[0], "-no-follow")) {
+			follow_mouse = False;
+			continue;
+		}
+
+		if(!strcmp(argv[0], "-cursor")) {
+			show_cursor = True;
+			continue;
+		}
+
+		if(!strcmp(argv[0], "-no-cursor")) {
+			show_cursor = False;
 			continue;
 		}
 
@@ -634,7 +654,7 @@ main(int argc, char **argv) {
 	XDefineCursor(dpy, win, crosshair);
 
 	for(;;) {
-		if (follow_mouse) {
+		if (follow_mouse || show_cursor ) {
 			for (i = 0; i < number_of_screens; i++) {
 				result = XQueryPointer(display, root_windows[i], &window_returned,
 						&window_returned, &root_x, &root_y, &win_x, &win_y,
@@ -647,9 +667,10 @@ main(int argc, char **argv) {
 				fprintf(stderr, "No mouse found.\n");
 				return -1;
 			}
-			//printf("Mouse is at (%d,%d)\n", root_x, root_y);
-			xgrab = root_x - width[SRC]/2;
-			ygrab = root_y - height[SRC]/2;
+			if (follow_mouse) {
+				xgrab = root_x - width[SRC]/2;
+				ygrab = root_y - height[SRC]/2;
+			}
 		}
 		/*****
 		old event loop updated to support WM messages
@@ -831,13 +852,16 @@ main(int argc, char **argv) {
 					exit(0);
 					break;
 
+				case 'c':
+					show_cursor = ! show_cursor;
+					break;
+
 				case 'f':
 					follow_mouse = ! follow_mouse;
 					break;
+
 				}
-
 				break;
-
 			case ButtonPress:
 #ifdef FRAME
 				xgrab = event.xbutton.x_root - width[SRC]/2;
@@ -892,7 +916,6 @@ main(int argc, char **argv) {
 				ygrab = HeightOfScreen(scr)-height[SRC];
 
 		}
-
 #ifdef XSHM
 		XShmGetImage(dpy, RootWindowOfScreen(scr), ximage[SRC],
 			xgrab, ygrab, AllPlanes);
@@ -908,6 +931,8 @@ main(int argc, char **argv) {
 		}
 #endif
 
+
+
 		if (depth == 8)
 			scale8();
 		else if (depth <= 8*sizeof(short))
@@ -915,6 +940,26 @@ main(int argc, char **argv) {
 		else if (depth <= 8*sizeof(int))
 			scale32();
 
+		if (show_cursor) {
+			long pixel = 0;
+			int cursor2x = ( root_x - xgrab ) * magx;
+			int cursor2y = ( root_y - ygrab ) * magy;
+
+			if (cursor2x < CURSOR_RADIUS) cursor2x = CURSOR_RADIUS;
+			if (cursor2y < CURSOR_RADIUS) cursor2y = CURSOR_RADIUS;
+
+			if (cursor2x > ximage[DST]->width) cursor2x = ximage[DST]->width - CURSOR_RADIUS;
+			if (cursor2y > ximage[DST]->width) cursor2y = ximage[DST]->height - CURSOR_RADIUS;
+
+			for (int x = cursor2x - CURSOR_RADIUS; x < cursor2x + CURSOR_RADIUS && x < ximage[DST]->width; x++) {
+				for (int y = cursor2y - CURSOR_RADIUS ; y < cursor2y + CURSOR_RADIUS && y < ximage[DST]->height; y++) {
+					// Invert the color of each pixel
+					pixel = XGetPixel(ximage[DST], x, y);
+					XPutPixel(ximage[DST], x, y, ~pixel);
+				}
+			}
+
+		}
 #ifdef XSHM
 		XShmPutImage(dpy, win, gc, ximage[DST], 0, 0, 0, 0, width[DST], height[DST], False);
 #else
