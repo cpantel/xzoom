@@ -32,6 +32,7 @@ tony mancill		2002/02/13 <tmancill@debian.org>
 Carlos Pantelides       * 2020/04/01
                           added follow mouse taken from
                           https://github.com/mbarakatt/xzoom-follow-mouse
+                          with modifications to allow turning this feature ON and OFF
 
 
 
@@ -633,22 +634,23 @@ main(int argc, char **argv) {
 	XDefineCursor(dpy, win, crosshair);
 
 	for(;;) {
-
-		for (i = 0; i < number_of_screens; i++) {
-			result = XQueryPointer(display, root_windows[i], &window_returned,
-					&window_returned, &root_x, &root_y, &win_x, &win_y,
-					&mask_return);
-			if (result == True) {
-				break;
+		if (follow_mouse) {
+			for (i = 0; i < number_of_screens; i++) {
+				result = XQueryPointer(display, root_windows[i], &window_returned,
+						&window_returned, &root_x, &root_y, &win_x, &win_y,
+						&mask_return);
+				if (result == True) {
+					break;
+				}
 			}
+			if (result != True) {
+				fprintf(stderr, "No mouse found.\n");
+				return -1;
+			}
+			//printf("Mouse is at (%d,%d)\n", root_x, root_y);
+			xgrab = root_x - width[SRC]/2;
+			ygrab = root_y - height[SRC]/2;
 		}
-		if (result != True) {
-			fprintf(stderr, "No mouse found.\n");
-			return -1;
-		}
-		//printf("Mouse is at (%d,%d)\n", root_x, root_y);
-		xgrab = root_x - width[SRC]/2;
-		ygrab = root_y - height[SRC]/2;
 		/*****
 		old event loop updated to support WM messages
 		while(unmapped?
@@ -827,6 +829,10 @@ main(int argc, char **argv) {
 					free(root_windows);
 					XCloseDisplay(display);
 					exit(0);
+					break;
+
+				case 'f':
+					follow_mouse = ! follow_mouse;
 					break;
 				}
 
